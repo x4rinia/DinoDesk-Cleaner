@@ -1,0 +1,430 @@
+<ui:FluentWindow x:Class="DinoDeskCleaner.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:viewmodels="clr-namespace:DinoDeskCleaner.ViewModels"
+        mc:Ignorable="d"
+        Title="DinoDesk Cleaner - Dein smarter Desktop-Aufräumer • by Xarinia &amp; Dino" Height="780" Width="1160"
+        WindowBackdropType="Mica"
+        ExtendsContentIntoTitleBar="True">
+    
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Window.Resources>
+
+    <Window.DataContext>
+        <viewmodels:MainViewModel />
+    </Window.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        
+        <ui:TitleBar Title="DinoDesk Cleaner - Dein smarter Desktop-Aufräumer • by Xarinia &amp; Dino" Grid.Row="0">
+            <ui:TitleBar.Icon>
+                <ui:SymbolIcon Symbol="Broom24" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
+
+        <Grid Grid.Row="1" Margin="20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Navigation Links -->
+            <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                <Image Source="pack://application:,,,/Assets/dinodesk_icon.png" Height="190" Width="190" Margin="0,0,0,10" HorizontalAlignment="Center" Stretch="UniformToFill" />
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,2" HorizontalAlignment="Center">
+                    <TextBlock Text="DinoDesk Cleaner" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="Dein smarter Desktop-Aufräumer" Foreground="Gray" Margin="0,0,0,2" HorizontalAlignment="Center"/>
+                <TextBlock Text="by Xarinia &amp; Dino" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,15" HorizontalAlignment="Center"/>
+                
+                <ui:Button Content="Desktop scannen" Command="{Binding ScanDesktopCommand}" Appearance="Primary" Margin="0,5" HorizontalAlignment="Stretch" Icon="{ui:SymbolIcon Search24}" ToolTip="Sucht normale Dateien und Ordner auf dem Desktop, die in 'Aufräumen' einsortiert werden können." />
+                
+                <ui:Button Content="Verknüpfungen prüfen" Command="{Binding CheckShortcutsCommand}" Margin="0,5" HorizontalAlignment="Stretch" Icon="{ui:SymbolIcon Link24}" ToolTip="Prüft Desktop-Verknüpfungen separat und zeigt Hinweise zu selten genutzten Programmen &amp; Deinstallation." />
+                
+                <ui:Button Content="Ordner-Vorschläge erstellen" Command="{Binding CreateSuggestionsCommand}" Margin="0,5" HorizontalAlignment="Stretch" Icon="{ui:SymbolIcon Wand24}" ToolTip="Erkennt ähnliche Programme und schlägt passende Desktop-Ordner vor." />
+                
+                <ui:Button Content="Papierkorb" Command="{Binding CheckRecycleBinCommand}" Margin="0,5" HorizontalAlignment="Stretch" Icon="{ui:SymbolIcon Delete24}" ToolTip="Zeigt den Windows-Papierkorb und bietet Dinos Aufräumen-Check an." />
+                
+                <Separator Margin="0,15" />
+                <ui:Button Content="Aufräum-Protokoll" Command="{Binding OpenProtokollCommand}" Appearance="Secondary" Margin="0,5" HorizontalAlignment="Stretch" Icon="{ui:SymbolIcon DocumentText24}" ToolTip="Öffnet das detaillierte Protokoll der durchgeführten Aktionen." />
+            </StackPanel>
+
+            <!-- Content Rechts -->
+            <TabControl Grid.Column="1" Style="{DynamicResource {x:Type TabControl}}" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
+                
+                <!-- TAB 0: DATEIEN & ORDNER -->
+                <TabItem Header="Dateien &amp; Ordner (Aufräumen)">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="{Binding ScanSummary}" Margin="0,0,0,10" Foreground="Gray" />
+                        
+                        <DataGrid Grid.Row="1" ItemsSource="{Binding CleanupItems}" Visibility="{Binding HasCleanupItems, Converter={StaticResource BooleanToVisibilityConverter}}" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridCheckBoxColumn Header="Auswählen" Binding="{Binding IsSelected}" Width="80" />
+                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" IsReadOnly="True" />
+                                <DataGridTextColumn Header="Typ" Binding="{Binding Category}" Width="110" IsReadOnly="True" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <StackPanel Grid.Row="1" Visibility="{Binding IsDesktopClean, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Image Source="pack://application:,,,/Assets/dinodesk_icon.png" Height="100" Width="100" Margin="0,0,0,15" HorizontalAlignment="Center" Stretch="UniformToFill" />
+                            <TextBlock Text="✅ Desktop ist bereits sauber." FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,10" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="Dino hat keine auffälligen Dateien oder Ordner gefunden." HorizontalAlignment="Center" Foreground="Gray" Margin="0,0,0,5" />
+                            <TextBlock Text="Du kannst weiterhin Verknüpfungen prüfen oder Ordner-Vorschläge erstellen." HorizontalAlignment="Center" Foreground="Gray" />
+                        </StackPanel>
+
+                        <!-- Freies Feld: Auswahl aufräumen direkt im Tab! -->
+                        <Border Grid.Row="2" Visibility="{Binding HasCleanupItems, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,15,0,0" Padding="12" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                
+                                <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,8">
+                                    <ui:Button Content="Auswahl jetzt aufräumen" 
+                                               Command="{Binding ApplyCleanupCommand}" 
+                                               Appearance="Success" 
+                                               Icon="{ui:SymbolIcon Checkmark24}" 
+                                               Padding="16,8" 
+                                               Margin="0,0,12,0" 
+                                               ToolTip="Verschiebt die ausgewählten Dateien &amp; Ordner nach Aufräumen\Datum\Kategorie." />
+                                    
+                                    <ui:Button Content="Alle auswählen" 
+                                               Command="{Binding SelectAllCleanupItemsCommand}" 
+                                               Appearance="Secondary" 
+                                               Margin="0,0,8,0" />
+                                    
+                                    <ui:Button Content="Keine auswählen" 
+                                               Command="{Binding DeselectAllCleanupItemsCommand}" 
+                                               Appearance="Secondary" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="🦖 Ordner 'Aufräumen' auf dem Desktop trägt automatisch das DinoDesk-Dino-Symbol." Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" FontWeight="Medium" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </TabItem>
+                
+                <!-- TAB 1: VERKNÜPFUNGEN & DEINSTALLATION -->
+                <TabItem Header="Verknüpfungen">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="1.6*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="1*" />
+                        </Grid.RowDefinitions>
+                        
+                        <!-- Liste der Verknüpfungen mit RadioButton zur Einzelauswahl -->
+                        <DataGrid Grid.Row="0" ItemsSource="{Binding ShortcutItems}" SelectedItem="{Binding SelectedShortcutItem, Mode=TwoWay}" AutoGenerateColumns="False" IsReadOnly="False" HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="Wählen" Width="60">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <RadioButton GroupName="ShortcutRadioGroup" 
+                                                         IsChecked="{Binding IsSelectedForAction, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                         Command="{Binding DataContext.SelectShortcutForActionCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                         CommandParameter="{Binding}"
+                                                         HorizontalAlignment="Center" 
+                                                         VerticalAlignment="Center" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                
+                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="210" IsReadOnly="True" />
+                                <DataGridTextColumn Header="Starts" Binding="{Binding RunCount}" Width="55" IsReadOnly="True" />
+                                <DataGridTextColumn Header="Score" Binding="{Binding UsageScore, StringFormat={}{0:F2}}" Width="55" IsReadOnly="True" />
+                                <DataGridTextColumn Header="Ziel / Details" Binding="{Binding ShortcutTarget}" Width="*" IsReadOnly="True" />
+                                
+                                <DataGridTemplateColumn Header="Status" Width="115">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Text="{Binding ShortcutStatus}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="#4CAF50" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsShortcutValid}" Value="False">
+                                                                <Setter Property="Foreground" Value="#FF5252" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding ShortcutStatus}" Value="⚠️ Nicht prüfbar">
+                                                                <Setter Property="Foreground" Value="#FFA726" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <!-- Freies Feld: Aktions-Bereich für die gewählte Verknüpfung -->
+                        <ui:Card Grid.Row="1" Margin="0,10,0,10" Padding="14">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="Gewählt: " FontWeight="Medium" Foreground="Gray" />
+                                        <TextBlock Text="{Binding SelectedShortcutItem.Name, TargetNullValue='Bitte wähle etwas aus.'}" FontWeight="Bold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                    </StackPanel>
+                                    <TextBlock Text="💡 Selten genutzt? Suche das Programm in Windows und deinstalliere es dort, oder lösche die Verknüpfung vom Desktop." Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ui:Button Content="🔎 In Windows Apps suchen" 
+                                               Command="{Binding SearchAppInWindowsCommand}" 
+                                               Appearance="Primary" 
+                                               Margin="0,0,8,0" 
+                                               ToolTip="Öffnet die Windows-Einstellungen 'Installierte Apps' und sucht nach dem Programm." />
+                                    
+                                    <ui:Button Content="🗑️ Verknüpfung entfernen" 
+                                               Command="{Binding DeleteSelectedShortcutCommand}" 
+                                               Appearance="Danger" 
+                                               Margin="0,0,8,0" 
+                                               ToolTip="Verschiebt diese Verknüpfung vom Desktop in den Papierkorb." />
+                                    
+                                    <ui:Button Content="📂 Zielordner" 
+                                               Command="{Binding OpenSelectedShortcutTargetCommand}" 
+                                               Appearance="Secondary" 
+                                               ToolTip="Öffnet den Speicherort im Windows Explorer." />
+                                </StackPanel>
+                            </Grid>
+                        </ui:Card>
+                        
+                        <!-- Fehlende Verknüpfungen (oft genutzt, aber nicht auf dem Desktop) -->
+                        <Grid Grid.Row="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            
+                            <TextBlock Grid.Row="0" Text="💡 Oft genutzt, aber nicht auf dem Desktop (Klicke auf den Button, um Verknüpfung anzulegen):" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            
+                            <DataGrid Grid.Row="1" ItemsSource="{Binding MissingShortcuts}" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="Aktion" Width="170">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ui:Button Content="➕ Auf Desktop anlegen" 
+                                                           Command="{Binding DataContext.CreateMissingShortcutCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
+                                                           CommandParameter="{Binding}" 
+                                                           Appearance="Primary" 
+                                                           Padding="8,3" 
+                                                           FontSize="12" 
+                                                           HorizontalAlignment="Center" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    
+                                    <DataGridTextColumn Header="Programm" Binding="{Binding Name}" Width="200" />
+                                    <DataGridTextColumn Header="Start-Häufigkeit" Binding="{Binding RunCount}" Width="110" />
+                                    <DataGridTextColumn Header="Programmpfad" Binding="{Binding ExecutablePath}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+                
+                <!-- TAB 2: ORDNER-VORSCHLÄGE -->
+                <TabItem Header="Ordner-Vorschläge">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="💡 Vielfältige Ordner-Vorschläge basierend auf deinen Programmen (hier wird erst etwas verschoben, wenn du unten klickst):" Foreground="Gray" Margin="0,0,0,10" TextWrapping="Wrap" />
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding FolderSuggestions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <ui:Card Margin="0,0,0,10">
+                                            <StackPanel>
+                                                <TextBox Text="{Binding SuggestedName}" FontWeight="Bold" FontSize="16" BorderThickness="0" Background="Transparent" />
+                                                <TextBlock Text="{Binding Items.Count, StringFormat='\{0\} Elemente'}" Foreground="Gray" />
+                                                <ItemsControl ItemsSource="{Binding Items}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding Name}" Margin="10,2,0,0" />
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </ui:Card>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        <ui:Button Grid.Row="2" Content="Vorschläge jetzt anwenden" Command="{Binding ApplyFolderSuggestionsCommand}" Appearance="Primary" HorizontalAlignment="Left" Margin="0,10,0,0" Icon="{ui:SymbolIcon Folder24}" ToolTip="Verschiebt die markierten Verknüpfungen in die jeweiligen Ordner." />
+                    </Grid>
+                </TabItem>
+                
+                <!-- TAB 3: PAPIERKORB & DOUBLETTEN-FINDER -->
+                <TabItem Header="Papierkorb">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="15">
+                            
+                            <!-- SEKTION 1: WINDOWS PAPIERKORB -->
+                            <ui:Card Margin="0,0,0,15" Padding="15">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                        <ui:SymbolIcon Symbol="Delete24" FontSize="26" Margin="0,0,10,0" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding RecycleBinSummary}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                    </StackPanel>
+
+                                    <TextBlock Text="{Binding RecycleBinDetails}" Foreground="Gray" Margin="36,0,0,15" TextWrapping="Wrap" LineHeight="22" />
+
+                                    <!-- Fortschritts-Anzeige während des Leerens -->
+                                    <StackPanel Margin="36,0,0,15" Visibility="{Binding IsRecycleBinEmptying, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <TextBlock Text="{Binding RecycleBinProgressText}" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,0,0,6" />
+                                        <ProgressBar Value="{Binding RecycleBinProgress}" Maximum="100" Height="10" />
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" Margin="36,0,0,0">
+                                        <ui:Button Content="Ja, Papierkorb jetzt leeren!" 
+                                                   Command="{Binding EmptyRecycleBinCommand}" 
+                                                   IsEnabled="{Binding CanEmptyRecycleBin}" 
+                                                   Appearance="Danger" 
+                                                   Icon="{ui:SymbolIcon Delete24}" 
+                                                   Padding="16,8"
+                                                   Margin="0,0,12,0" />
+                                        
+                                        <ui:Button Content="↻ Aktualisieren" 
+                                                   Command="{Binding RefreshRecycleBinCommand}" 
+                                                   Appearance="Secondary" 
+                                                   Icon="{ui:SymbolIcon ArrowClockwise24}" 
+                                                   Padding="14,8" />
+                                    </StackPanel>
+
+                                    <!-- Letzte Löschung wiederherstellen -->
+                                    <Border Margin="36,15,0,0" Padding="12" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6">
+                                        <StackPanel>
+                                            <TextBlock Text="Zuletzt gelöscht" FontWeight="SemiBold" Margin="0,0,0,6" />
+                                            
+                                            <Grid Visibility="{Binding HasLastDeletedItem, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{Binding LastDeletedItem.Name}" FontWeight="Bold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" TextWrapping="Wrap" />
+                                                    <TextBlock Text="{Binding LastDeletedItem.OriginalLocation, StringFormat='Ursprünglicher Ort: \{0\}'}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" Margin="0,2,0,0" />
+                                                    <TextBlock Text="{Binding LastDeletedItem.DateDeleted, StringFormat='Gelöscht: \{0:g\}'}" Foreground="Gray" FontSize="12" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                                
+                                                <ui:Button Grid.Column="1" Content="↶ Letzte Löschung wiederherstellen" 
+                                                           Command="{Binding RestoreLastDeletedItemCommand}" 
+                                                           Appearance="Primary" 
+                                                           VerticalAlignment="Center" 
+                                                           Margin="10,0,0,0" />
+                                            </Grid>
+
+                                            <TextBlock Text="Keine gelöschten Elemente zum Wiederherstellen vorhanden." 
+                                                       Visibility="{Binding HasNoLastDeletedItem, Converter={StaticResource BooleanToVisibilityConverter}}" 
+                                                       Foreground="Gray" FontStyle="Italic" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ui:Card>
+
+                            <!-- SEKTION 2: DINOS AUFRÄUMEN-CHECK (DOUBLETTEN & MÜLL) -->
+                            <ui:Card Margin="0,0,0,15" Padding="15">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <ui:SymbolIcon Symbol="Wand24" FontSize="24" Margin="0,0,10,0" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="🦖 Dinos Aufräumen-Check: Was kann weg?" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    
+                                    <TextBlock Text="Dino kann deinen Ordner 'Aufräumen' auf dem Desktop nach doppelten Dateien (z.B. (1)-Kopien) und alten temporären Dateien durchsuchen, damit du sie sicher in den Papierkorb legen kannst." Foreground="Gray" Margin="34,0,0,12" TextWrapping="Wrap" />
+
+                                    <StackPanel Orientation="Horizontal" Margin="34,0,0,12">
+                                        <ui:Button Content="🔍 Aufräumen-Ordner analysieren" 
+                                                   Command="{Binding AnalyzeAufräumenCommand}" 
+                                                   Appearance="Primary" 
+                                                   Margin="0,0,10,0" />
+                                        
+                                        <ui:Button Content="🗑️ Ausgewählte in Papierkorb legen" 
+                                                   Command="{Binding MoveSelectedCandidatesToRecycleBinCommand}" 
+                                                   Appearance="Danger" 
+                                                   Margin="0,0,10,0" />
+                                        
+                                        <ui:Button Content="Alle" 
+                                                   Command="{Binding SelectAllCandidatesCommand}" 
+                                                   Appearance="Secondary" 
+                                                   Margin="0,0,6,0" />
+                                        
+                                        <ui:Button Content="Keine" 
+                                                   Command="{Binding DeselectAllCandidatesCommand}" 
+                                                   Appearance="Secondary" />
+                                    </StackPanel>
+
+                                    <TextBlock Text="{Binding AufräumenCandidatesSummary}" FontWeight="Medium" Margin="34,0,0,10" Foreground="Gray" TextWrapping="Wrap" />
+
+                                    <!-- Gefundene Doubletten & Müll-Dateien -->
+                                    <DataGrid ItemsSource="{Binding AufräumenCandidates}" MaxHeight="230" Margin="34,0,0,0" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column">
+                                        <DataGrid.Columns>
+                                            <DataGridCheckBoxColumn Header="In Papierkorb" Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="100" />
+                                            <DataGridTextColumn Header="Dateiname" Binding="{Binding Name}" Width="200" IsReadOnly="True" />
+                                            <DataGridTextColumn Header="Größe" Binding="{Binding FormattedSize}" Width="90" IsReadOnly="True" />
+                                            <DataGridTextColumn Header="Grund / Erkennung" Binding="{Binding Reason}" Width="240" IsReadOnly="True" />
+                                            <DataGridTextColumn Header="Pfad in Aufräumen" Binding="{Binding RelativePath}" Width="*" IsReadOnly="True" />
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </StackPanel>
+                            </ui:Card>
+
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- TAB 4: AUFRÄUM-PROTOKOLL -->
+                <TabItem Header="Aufräum-Protokoll">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0" Margin="0,0,0,10">
+                            <TextBlock Text="Aufräum-Protokoll (letzter Vorgang)" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <ui:Button Content="Protokoll löschen" Command="{Binding ClearProtokollCommand}" Appearance="Danger" Icon="{ui:SymbolIcon Delete24}" HorizontalAlignment="Right" />
+                        </Grid>
+                        <ListBox Grid.Row="1" ItemsSource="{Binding ActionLog}" Margin="0,0,0,10" />
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Grid>
+        
+        <ui:SnackbarPresenter Grid.Row="2" x:Name="SnackbarPresenter" />
+        <Border Grid.Row="2" Background="{DynamicResource ControlFillColorDefaultBrush}" Padding="12,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" FontWeight="Medium" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="🦖 DinoDesk Cleaner • by Xarinia &amp; Dino" Foreground="Gray" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+    </Grid>
+</ui:FluentWindow>
