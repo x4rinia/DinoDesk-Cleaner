@@ -10,6 +10,10 @@ using CommunityToolkit.Mvvm.Input;
 using DinoDeskCleaner.Core.Action;
 using DinoDeskCleaner.Core.Analyzer;
 using DinoDeskCleaner.Core.Scanner;
+using System.Windows.Threading;
+using MessageBox = System.Windows.MessageBox;
+using Application = System.Windows.Application;
+using Clipboard = System.Windows.Clipboard;
 using DinoDeskCleaner.Models;
 
 namespace DinoDeskCleaner.ViewModels
@@ -404,42 +408,57 @@ namespace DinoDeskCleaner.ViewModels
                 bool automationSuccess = false;
                 await Task.Run(async () =>
                 {
-                    // Kurze Wartezeit, bis das Fenster offen ist
-                    await Task.Delay(2000);
-                    
-                    try
+                    for (int i = 0; i < 5; i++)
                     {
-                        var root = System.Windows.Automation.AutomationElement.RootElement;
-                        var settingsWindow = root.FindFirst(System.Windows.Automation.TreeScope.Children,
-                            new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.NameProperty, "Einstellungen"));
-
-                        if (settingsWindow != null)
+                        await Task.Delay(1500); // 1.5s warten pro Iteration
+                        try
                         {
-                            var searchBox = settingsWindow.FindFirst(System.Windows.Automation.TreeScope.Descendants,
-                                new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.AutomationIdProperty, "SystemSettings_AppListSearch_InputButton"));
+                            var root = System.Windows.Automation.AutomationElement.RootElement;
+                            var topLevelWindows = root.FindAll(System.Windows.Automation.TreeScope.Children, System.Windows.Automation.Condition.TrueCondition);
                             
-                            // Manchmal heißt es auch anders oder hat einen anderen Typ, wir probieren auch "Apps durchsuchen" Name
-                            if (searchBox == null)
+                            foreach (System.Windows.Automation.AutomationElement window in topLevelWindows)
                             {
-                                searchBox = settingsWindow.FindFirst(System.Windows.Automation.TreeScope.Descendants,
-                                    new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.NameProperty, "Apps durchsuchen"));
-                            }
+                                // Überspringe leere Fenster oder DinoDesk selbst
+                                if (string.IsNullOrEmpty(window.Current.Name) || window.Current.Name.Contains("DinoDesk"))
+                                    continue;
 
-                            if (searchBox != null)
-                            {
-                                searchBox.SetFocus();
+                                // Wir suchen direkt nach dem Suchfeld
+                                var searchBox = window.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+                                    new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.AutomationIdProperty, "SystemSettings_AppListSearch_InputButton"));
                                 
-                                if (searchBox.GetCurrentPattern(System.Windows.Automation.ValuePattern.Pattern) is System.Windows.Automation.ValuePattern valuePattern)
+                                if (searchBox == null)
                                 {
-                                    valuePattern.SetValue(appName);
+                                    searchBox = window.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+                                        new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.NameProperty, "Apps durchsuchen"));
+                                }
+
+                                if (searchBox == null)
+                                {
+                                    searchBox = window.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+                                        new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.AutomationIdProperty, "SearchTextBox"));
+                                }
+
+                                if (searchBox != null)
+                                {
+                                    searchBox.SetFocus();
+                                    
+                                    if (searchBox.GetCurrentPattern(System.Windows.Automation.ValuePattern.Pattern) is System.Windows.Automation.ValuePattern valuePattern)
+                                    {
+                                        valuePattern.SetValue(appName);
+                                    }
+                                    else
+                                    {
+                                        // Fallback via SendKeys
+                                        System.Windows.Forms.SendKeys.SendWait("^{a}{DELETE}"); // Alles markieren und löschen
+                                        System.Windows.Forms.SendKeys.SendWait(appName);
+                                    }
+                                    
                                     automationSuccess = true;
+                                    return;
                                 }
                             }
                         }
-                    }
-                    catch
-                    {
-                        // UI Automation fehlgeschlagen, nicht abstürzen
+                        catch { }
                     }
                 });
 

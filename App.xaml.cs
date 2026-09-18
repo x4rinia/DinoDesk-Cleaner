@@ -2,13 +2,14 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
+using MessageBox = System.Windows.MessageBox;
 
 namespace DinoDeskCleaner
 {
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application
+    public partial class App : System.Windows.Application
     {
         protected override void OnStartup(StartupEventArgs e)
         {
