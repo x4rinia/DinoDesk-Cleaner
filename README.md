@@ -3,7 +3,8 @@ Dein smarter Desktop-Aufräumer
 
 DinoDesk Cleaner ist ein kleines Windows-Tool, das den Desktop aufräumt, Dateien sinnvoll einsortiert, Verknüpfungen überprüft und beim Organisieren hilft – ohne ungefragt persönliche Dateien zu löschen.
 
-![DinoDesk Cleaner](docs/screenshots/dinodesk-cleaner.png)
+![DinoDesk Cleaner - Hauptansicht](docs/screenshots/screen1.png)
+![DinoDesk Cleaner - Papierkorb](docs/screenshots/screen2.png)
 
 ## Features
 
