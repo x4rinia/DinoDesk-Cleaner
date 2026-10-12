@@ -137,9 +137,14 @@
                                 </StackPanel>
                             </Border>
 
-                            <DataGrid Grid.Row="1" ItemsSource="{Binding CleanupItems}" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column">
+                            <DataGrid Grid.Row="1" ItemsSource="{Binding CleanupItems}" 
+                                      AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column"
+                                      Background="Transparent" RowBackground="Transparent" AlternatingRowBackground="#08FFFFFF"
+                                      BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#15FFFFFF">
                                 <DataGrid.RowStyle>
                                     <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
                                         <Setter Property="ContextMenu">
                                             <Setter.Value>
                                                 <ContextMenu>
@@ -156,21 +161,38 @@
                                                 </ContextMenu>
                                             </Setter.Value>
                                         </Setter>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#15FFFFFF" />
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="Background" Value="#25FFFFFF" />
+                                            </Trigger>
+                                        </Style.Triggers>
                                     </Style>
                                 </DataGrid.RowStyle>
 
                                 <DataGrid.Columns>
+                                    <!-- Auswählen: Zeigt CheckBox wenn frei, oder Schloss-Symbol wenn gesperrt -->
                                     <DataGridTemplateColumn Header="Auswählen" Width="85">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                                                          IsEnabled="{Binding IsNotLocked}" 
-                                                          HorizontalAlignment="Center" 
-                                                          ToolTip="{Binding SelectionToolTip}" />
+                                                <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                              Visibility="{Binding IsNotLocked, Converter={StaticResource BooleanToVisibilityConverter}}" 
+                                                              HorizontalAlignment="Center" 
+                                                              VerticalAlignment="Center" 
+                                                              ToolTip="Auswählen zum Aufräumen" />
+                                                    <ui:SymbolIcon Symbol="LockClosed20" 
+                                                                   Visibility="{Binding IsLocked, Converter={StaticResource BooleanToVisibilityConverter}}" 
+                                                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" 
+                                                                   ToolTip="Gesperrt: Diese Datei bleibt auf dem Desktop und wird nicht aufgeräumt." />
+                                                </Grid>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
 
+                                    <!-- Dauerhaft sperren Toggle -->
                                     <DataGridTemplateColumn Header="🔒 Sperren" Width="95">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
@@ -181,20 +203,30 @@
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
 
+                                    <!-- Name mit Schloss-Präfix -->
                                     <DataGridTemplateColumn Header="Name" Width="*">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                    <TextBlock Text="🔒 " Visibility="{Binding IsLocked, Converter={StaticResource BooleanToVisibilityConverter}}" FontWeight="Bold" ToolTip="Gesperrt (geschützt)" />
-                                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="🔒 " Visibility="{Binding IsLocked, Converter={StaticResource BooleanToVisibilityConverter}}" FontWeight="Bold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,0,4,0" ToolTip="Gesperrt (geschützt)" />
+                                                    <TextBlock Text="{Binding Name}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                                 </StackPanel>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
 
-                                    <DataGridTextColumn Header="Typ" Binding="{Binding Category}" Width="110" IsReadOnly="True" />
+                                    <!-- Typ -->
+                                    <DataGridTextColumn Header="Typ" Binding="{Binding Category}" Width="110" IsReadOnly="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                <Setter Property="VerticalAlignment" Value="Center" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
 
-                                    <DataGridTemplateColumn Header="Status" Width="180">
+                                    <!-- Status -->
+                                    <DataGridTemplateColumn Header="Status" Width="230">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding StatusDisplay}" VerticalAlignment="Center">
