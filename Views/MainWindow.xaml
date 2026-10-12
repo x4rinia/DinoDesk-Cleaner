@@ -69,22 +69,153 @@
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Text="{Binding ScanSummary}" Margin="0,0,0,10" Foreground="Gray" />
+                        <TextBlock Grid.Row="0" Text="{Binding ScanSummary}" Margin="0,0,0,10" Foreground="Gray" Visibility="{Binding HasCleanupItems, Converter={StaticResource BooleanToVisibilityConverter}}" />
                         
-                        <DataGrid Grid.Row="1" ItemsSource="{Binding CleanupItems}" Visibility="{Binding HasCleanupItems, Converter={StaticResource BooleanToVisibilityConverter}}" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column">
-                            <DataGrid.Columns>
-                                <DataGridCheckBoxColumn Header="Auswählen" Binding="{Binding IsSelected}" Width="80" />
-                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" IsReadOnly="True" />
-                                <DataGridTextColumn Header="Typ" Binding="{Binding Category}" Width="110" IsReadOnly="True" />
-                            </DataGrid.Columns>
-                        </DataGrid>
-
-                        <StackPanel Grid.Row="1" Visibility="{Binding IsDesktopClean, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Image Source="pack://application:,,,/Assets/dinodesk_icon.png" Height="100" Width="100" Margin="0,0,0,15" HorizontalAlignment="Center" Stretch="UniformToFill" />
-                            <TextBlock Text="✅ Desktop ist bereits sauber." FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,10" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
-                            <TextBlock Text="Dino hat keine auffälligen Dateien oder Ordner gefunden." HorizontalAlignment="Center" Foreground="Gray" Margin="0,0,0,5" />
-                            <TextBlock Text="Du kannst weiterhin Verknüpfungen prüfen oder Ordner-Vorschläge erstellen." HorizontalAlignment="Center" Foreground="Gray" />
+                        <!-- 1. INITIALZUSTAND BEIM START: Dino möchte für dich aufräumen -->
+                        <StackPanel Grid.Row="1" Visibility="{Binding IsInitialStateView, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Image Source="pack://application:,,,/Assets/dinodesk_icon.png" Height="130" Width="130" Margin="0,0,0,15" HorizontalAlignment="Center" Stretch="UniformToFill" />
+                            <TextBlock Text="🦖 Dino möchte für dich aufräumen!" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,10" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="Klicke auf den Button, um deinen Desktop zu analysieren und Ordnung zu schaffen." HorizontalAlignment="Center" Foreground="Gray" Margin="0,0,0,16" />
+                            <ui:Button Content="Desktop jetzt scannen" 
+                                       Command="{Binding ScanDesktopCommand}" 
+                                       Appearance="Primary" 
+                                       Icon="{ui:SymbolIcon Search24}" 
+                                       Padding="20,10" 
+                                       FontSize="14" 
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="💡 Dateien und Ordner können dauerhaft gesperrt werden – Dino merkt sich das fürs nächste Mal." HorizontalAlignment="Center" Foreground="Gray" Margin="0,18,0,0" FontSize="12" />
                         </StackPanel>
+
+                        <!-- 2. WENN ER FERTIG IST: Dino hat aufgeräumt -->
+                        <StackPanel Grid.Row="1" Visibility="{Binding IsCleanupFinishedView, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Image Source="pack://application:,,,/Assets/dinodesk_icon.png" Height="130" Width="130" Margin="0,0,0,15" HorizontalAlignment="Center" Stretch="UniformToFill" />
+                            <TextBlock Text="🦖 Dino hat aufgeräumt!" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,10" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="{Binding CleanupFinishedSummary}" HorizontalAlignment="Center" FontWeight="Medium" Margin="0,0,0,6" />
+                            <TextBlock Text="Dein Desktop ist jetzt ordentlich und aufgeräumt." HorizontalAlignment="Center" Foreground="Gray" Margin="0,0,0,20" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <ui:Button Content="Desktop erneut scannen" 
+                                           Command="{Binding ScanDesktopCommand}" 
+                                           Appearance="Primary" 
+                                           Icon="{ui:SymbolIcon ArrowClockwise24}" 
+                                           Padding="16,8" 
+                                           Margin="0,0,10,0" />
+                                <ui:Button Content="Aufräum-Protokoll ansehen" 
+                                           Command="{Binding OpenProtokollCommand}" 
+                                           Appearance="Secondary" 
+                                           Icon="{ui:SymbolIcon DocumentText24}" 
+                                           Padding="16,8" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- 3. DESKTOP BEREITS SAUBER (nach manuellem Scan ohne Funde) -->
+                        <StackPanel Grid.Row="1" Visibility="{Binding IsDesktopCleanView, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Image Source="pack://application:,,,/Assets/dinodesk_icon.png" Height="110" Width="110" Margin="0,0,0,15" HorizontalAlignment="Center" Stretch="UniformToFill" />
+                            <TextBlock Text="✅ Dein Desktop ist sauber." FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,10" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="Dino hat keine aufräumbaren Dateien oder Ordner gefunden." HorizontalAlignment="Center" Foreground="Gray" Margin="0,0,0,15" />
+                            <ui:Button Content="Erneut scannen" 
+                                       Command="{Binding ScanDesktopCommand}" 
+                                       Appearance="Secondary" 
+                                       Icon="{ui:SymbolIcon ArrowClockwise24}" 
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- 4. DATENLISTE MIT SPERR-FUNKTION -->
+                        <Grid Grid.Row="1" Visibility="{Binding HasCleanupItems, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <!-- Banner wenn gerade aufgeräumt wurde aber gesperrte Elemente verbleiben -->
+                            <Border Grid.Row="0" Visibility="{Binding HasCleanedUp, Converter={StaticResource BooleanToVisibilityConverter}}" 
+                                    Background="{DynamicResource ControlFillColorSecondaryBrush}" 
+                                    BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" 
+                                    BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,10">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ui:SymbolIcon Symbol="CheckmarkCircle24" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,0,10,0" />
+                                    <TextBlock Text="{Binding CleanupFinishedBannerText}" VerticalAlignment="Center" FontWeight="Medium" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                </StackPanel>
+                            </Border>
+
+                            <DataGrid Grid.Row="1" ItemsSource="{Binding CleanupItems}" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column">
+                                <DataGrid.RowStyle>
+                                    <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                                        <Setter Property="ContextMenu">
+                                            <Setter.Value>
+                                                <ContextMenu>
+                                                    <MenuItem Header="🔒 Dauerhaft sperren (auf Desktop behalten)" 
+                                                              Command="{Binding DataContext.LockItemCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
+                                                              CommandParameter="{Binding}" />
+                                                    <MenuItem Header="🔓 Sperre aufheben" 
+                                                              Command="{Binding DataContext.UnlockItemCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
+                                                              CommandParameter="{Binding}" />
+                                                    <Separator />
+                                                    <MenuItem Header="Im Explorer anzeigen" 
+                                                              Command="{Binding DataContext.OpenInExplorerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
+                                                              CommandParameter="{Binding}" />
+                                                </ContextMenu>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </DataGrid.RowStyle>
+
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="Auswählen" Width="85">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                          IsEnabled="{Binding IsNotLocked}" 
+                                                          HorizontalAlignment="Center" 
+                                                          ToolTip="{Binding SelectionToolTip}" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTemplateColumn Header="🔒 Sperren" Width="95">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding IsLocked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                          HorizontalAlignment="Center" 
+                                                          ToolTip="Dauerhaft sperren: Bleibt auf dem Desktop und wird beim Aufräumen ignoriert." />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTemplateColumn Header="Name" Width="*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="🔒 " Visibility="{Binding IsLocked, Converter={StaticResource BooleanToVisibilityConverter}}" FontWeight="Bold" ToolTip="Gesperrt (geschützt)" />
+                                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTextColumn Header="Typ" Binding="{Binding Category}" Width="110" IsReadOnly="True" />
+
+                                    <DataGridTemplateColumn Header="Status" Width="180">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding StatusDisplay}" VerticalAlignment="Center">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="Gray" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsLocked}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
 
                         <!-- Freies Feld: Auswahl aufräumen direkt im Tab! -->
                         <Border Grid.Row="2" Visibility="{Binding HasCleanupItems, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,15,0,0" Padding="12" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8">
@@ -101,20 +232,28 @@
                                                Icon="{ui:SymbolIcon Checkmark24}" 
                                                Padding="16,8" 
                                                Margin="0,0,12,0" 
-                                               ToolTip="Verschiebt die ausgewählten Dateien &amp; Ordner nach Aufräumen\Datum\Kategorie." />
+                                               ToolTip="Verschiebt die ausgewählten Dateien &amp; Ordner nach Aufräumen\Datum\Kategorie (gesperrte Dateien bleiben unberührt)." />
                                     
                                     <ui:Button Content="Alle auswählen" 
                                                Command="{Binding SelectAllCleanupItemsCommand}" 
                                                Appearance="Secondary" 
-                                               Margin="0,0,8,0" />
+                                               Margin="0,0,8,0" 
+                                               ToolTip="Wählt alle ungesperrten Dateien &amp; Ordner aus." />
                                     
                                     <ui:Button Content="Keine auswählen" 
                                                Command="{Binding DeselectAllCleanupItemsCommand}" 
-                                               Appearance="Secondary" />
+                                               Appearance="Secondary" 
+                                               Margin="0,0,8,0" />
+
+                                    <ui:Button Content="Gesperrte anzeigen" 
+                                               Command="{Binding ShowLockedItemsCommand}" 
+                                               Appearance="Secondary" 
+                                               Icon="{ui:SymbolIcon LockClosed24}" 
+                                               ToolTip="Zeigt alle aktuell dauerhaft gespeicherten Sperren an." />
                                 </StackPanel>
 
                                 <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="🦖 Ordner 'Aufräumen' auf dem Desktop trägt automatisch das DinoDesk-Dino-Symbol." Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" FontWeight="Medium" />
+                                    <TextBlock Text="🦖 Gesperrte Dateien (🔒) bleiben dauerhaft unberührt auf deinem Desktop." Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" FontWeight="Medium" />
                                 </StackPanel>
                             </Grid>
                         </Border>

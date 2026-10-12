@@ -40,6 +40,36 @@ namespace DinoDeskCleaner.Models
         [ObservableProperty]
         private bool isSelectedForAction = false;
 
+        [ObservableProperty]
+        private bool isLocked = false;
+
+        public bool IsNotLocked => !IsLocked;
+
+        public string StatusDisplay => IsLocked ? "🔒 Gesperrt (bleibt auf Desktop)" : "Bereit zum Aufräumen";
+
+        public string SelectionToolTip => IsLocked
+            ? "Gesperrt: Diese Datei bleibt immer auf dem Desktop."
+            : "Auswählen zum Aufräumen";
+
+        partial void OnIsLockedChanged(bool value)
+        {
+            OnPropertyChanged(nameof(IsNotLocked));
+            OnPropertyChanged(nameof(StatusDisplay));
+            OnPropertyChanged(nameof(SelectionToolTip));
+            if (value)
+            {
+                IsSelected = false;
+            }
+        }
+
+        partial void OnIsSelectedChanged(bool value)
+        {
+            if (value && IsLocked)
+            {
+                IsSelected = false;
+            }
+        }
+
         // Shortcut properties
         [ObservableProperty]
         private string shortcutTarget = string.Empty;

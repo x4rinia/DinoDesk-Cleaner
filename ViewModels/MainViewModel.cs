@@ -14,6 +14,7 @@ using System.Windows.Threading;
 using MessageBox = System.Windows.MessageBox;
 using Application = System.Windows.Application;
 using Clipboard = System.Windows.Clipboard;
+using System.ComponentModel;
 using DinoDeskCleaner.Models;
 
 namespace DinoDeskCleaner.ViewModels
@@ -27,6 +28,7 @@ namespace DinoDeskCleaner.ViewModels
         private readonly FolderSuggester _suggester;
         private readonly RecycleBinManager _recycleBinManager;
         private readonly CleanupFolderAnalyzer _cleanupFolderAnalyzer;
+        private readonly LockedItemsManager _lockedItemsManager;
 
         public MainViewModel()
         {
@@ -37,8 +39,9 @@ namespace DinoDeskCleaner.ViewModels
             _suggester = new FolderSuggester();
             _recycleBinManager = new RecycleBinManager();
             _cleanupFolderAnalyzer = new CleanupFolderAnalyzer();
+            _lockedItemsManager = new LockedItemsManager();
 
-            StatusMessage = "Bereit zum Scannen. Dino wartet!";
+            StatusMessage = "🦕 Dino möchte für dich aufräumen!";
 
             // Papierkorbstatus initial beim Programmstart laden
             RefreshRecycleBin();
@@ -121,17 +124,64 @@ namespace DinoDeskCleaner.ViewModels
         private bool isAnalyzingAufräumen;
 
         [ObservableProperty]
-        private bool hasCleanupItems;
+        private bool isInitialState = true;
 
         [ObservableProperty]
-        private bool isDesktopClean = true;
+        private bool hasCleanedUp = false;
+
+        [ObservableProperty]
+        private bool hasCleanupItems = false;
+
+        [ObservableProperty]
+        private bool isDesktopClean = false;
+
+        [ObservableProperty]
+        private string cleanupFinishedSummary = "";
+
+        [ObservableProperty]
+        private string cleanupFinishedBannerText = "";
+
+        [ObservableProperty]
+        private int lockedItemsCount = 0;
+
+        public bool IsInitialStateView => IsInitialState;
+        public bool IsCleanupFinishedView => HasCleanedUp && !HasCleanupItems && !IsInitialState;
+        public bool IsDesktopCleanView => !HasCleanedUp && !HasCleanupItems && !IsInitialState;
+
+        partial void OnIsInitialStateChanged(bool value)
+        {
+            OnPropertyChanged(nameof(IsInitialStateView));
+            OnPropertyChanged(nameof(IsCleanupFinishedView));
+            OnPropertyChanged(nameof(IsDesktopCleanView));
+        }
+
+        partial void OnHasCleanedUpChanged(bool value)
+        {
+            OnPropertyChanged(nameof(IsCleanupFinishedView));
+            OnPropertyChanged(nameof(IsDesktopCleanView));
+        }
+
+        partial void OnHasCleanupItemsChanged(bool value)
+        {
+            OnPropertyChanged(nameof(IsCleanupFinishedView));
+            OnPropertyChanged(nameof(IsDesktopCleanView));
+        }
 
         [RelayCommand]
         private async Task ScanDesktopAsync()
         {
+            await ScanDesktopInternalAsync(fromCleanup: false);
+        }
+
+        private async Task ScanDesktopInternalAsync(bool fromCleanup)
+        {
             SelectedTabIndex = 0;
             IsBusy = true;
-            StatusMessage = "Dino sucht normale Dateien und Ordner...";
+            if (!fromCleanup)
+            {
+                HasCleanedUp = false;
+                StatusMessage = "Dino sucht normale Dateien und Ordner...";
+            }
             CleanupItems.Clear();
 
             await Task.Run(() =>
@@ -144,19 +194,60 @@ namespace DinoDeskCleaner.ViewModels
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    foreach (var item in items) CleanupItems.Add(item);
+                    foreach (var item in items)
+                    {
+                        bool isLocked = _lockedItemsManager.IsLocked(item.Name, item.FullPath);
+                        item.IsLocked = isLocked;
+                        item.IsSelected = !isLocked;
+                        item.PropertyChanged += OnCleanupItemPropertyChanged;
+                        CleanupItems.Add(item);
+                    }
 
-                    int filesCount = items.Count(i => i.Category != ItemCategory.Ordner);
-                    int foldersCount = items.Count(i => i.Category == ItemCategory.Ordner);
+                    IsInitialState = false;
+                    UpdateScanSummary();
 
-                    ScanSummary = $"{filesCount} Aufräum-Dateien gefunden.\n{foldersCount} Ordner gefunden.";
-                    HasCleanupItems = CleanupItems.Count > 0;
-                    IsDesktopClean = CleanupItems.Count == 0;
-                    StatusMessage = "Dateien & Ordner analysiert.";
+                    if (!fromCleanup)
+                    {
+                        int lockedCount = CleanupItems.Count(i => i.IsLocked);
+                        StatusMessage = $"{CleanupItems.Count} Elemente analysiert{(lockedCount > 0 ? $" ({lockedCount} gesperrt)" : "")}.";
+                    }
                 });
             });
 
             IsBusy = false;
+        }
+
+        private void UpdateScanSummary()
+        {
+            int filesCount = CleanupItems.Count(i => i.Category != ItemCategory.Ordner);
+            int foldersCount = CleanupItems.Count(i => i.Category == ItemCategory.Ordner);
+            int lockedCount = CleanupItems.Count(i => i.IsLocked);
+            LockedItemsCount = lockedCount;
+
+            string lockedInfo = lockedCount > 0 ? $" • 🔒 {lockedCount} gesperrt (bleiben auf Desktop)" : "";
+            ScanSummary = $"{filesCount} Aufräum-Dateien gefunden, {foldersCount} Ordner gefunden{lockedInfo}.";
+            HasCleanupItems = CleanupItems.Count > 0;
+            IsDesktopClean = CleanupItems.Count == 0;
+            OnPropertyChanged(nameof(IsCleanupFinishedView));
+            OnPropertyChanged(nameof(IsDesktopCleanView));
+        }
+
+        private void OnCleanupItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(DesktopItem.IsLocked) && sender is DesktopItem item)
+            {
+                if (item.IsLocked)
+                {
+                    _lockedItemsManager.Lock(item.Name, item.FullPath);
+                    StatusMessage = $"🔒 '{item.Name}' dauerhaft gesperrt (bleibt auf Desktop).";
+                }
+                else
+                {
+                    _lockedItemsManager.Unlock(item.Name, item.FullPath);
+                    StatusMessage = $"🔓 '{item.Name}' entsperrt.";
+                }
+                UpdateScanSummary();
+            }
         }
 
         [RelayCommand]
@@ -164,7 +255,10 @@ namespace DinoDeskCleaner.ViewModels
         {
             foreach (var item in CleanupItems)
             {
-                item.IsSelected = true;
+                if (!item.IsLocked)
+                {
+                    item.IsSelected = true;
+                }
             }
         }
 
@@ -175,6 +269,56 @@ namespace DinoDeskCleaner.ViewModels
             {
                 item.IsSelected = false;
             }
+        }
+
+        [RelayCommand]
+        private void LockItem(DesktopItem? item)
+        {
+            if (item != null)
+            {
+                item.IsLocked = true;
+            }
+        }
+
+        [RelayCommand]
+        private void UnlockItem(DesktopItem? item)
+        {
+            if (item != null)
+            {
+                item.IsLocked = false;
+            }
+        }
+
+        [RelayCommand]
+        private void OpenInExplorer(DesktopItem? item)
+        {
+            if (item != null && !string.IsNullOrEmpty(item.FullPath))
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{item.FullPath}\"") { UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Konnte Explorer nicht öffnen: {ex.Message}", "DinoDesk", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+        }
+
+        [RelayCommand]
+        private void ShowLockedItems()
+        {
+            var list = _lockedItemsManager.GetAllLockedItems();
+            if (list.Count == 0)
+            {
+                MessageBox.Show("Aktuell sind keine Dateien oder Ordner dauerhaft gesperrt.", "DinoDesk - Gesperrte Elemente", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            string text = $"Aktuell gespeicherte Sperren ({list.Count}):\n\n" +
+                          string.Join("\n", list.Select(i => $"• {i.Name} (gesperrt seit {i.LockedAt:dd.MM.yyyy HH:mm})")) +
+                          "\n\nDiese Elemente werden von Dino niemals verschoben und bleiben immer auf deinem Desktop erhalten.";
+            MessageBox.Show(text, "DinoDesk - Gesperrte Elemente", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         [RelayCommand]
@@ -557,20 +701,27 @@ namespace DinoDeskCleaner.ViewModels
         }
 
         [RelayCommand]
-        private void ApplyCleanup()
+        private async Task ApplyCleanupAsync()
         {
             StatusMessage = "Dino räumt den Desktop auf...";
             var path = _scanner.GetDesktopPath();
 
-            var selectedToCleanup = CleanupItems.Where(i => i.IsSelected).ToList();
+            var selectedToCleanup = CleanupItems.Where(i => i.IsSelected && !i.IsLocked).ToList();
+            if (!selectedToCleanup.Any())
+            {
+                MessageBox.Show("Keine ungesperrten Dateien oder Ordner zum Aufräumen ausgewählt.", "DinoDesk Cleaner", MessageBoxButton.OK, MessageBoxImage.Information);
+                StatusMessage = "Keine Elemente zum Aufräumen ausgewählt.";
+                return;
+            }
+
             int movedFiles = 0;
             int movedFolders = 0;
 
-            if (selectedToCleanup.Any())
+            await Task.Run(() =>
             {
                 movedFiles = _fileMover.CreateCleanupFolderAndMove(path, selectedToCleanup.Where(i => i.Category != ItemCategory.Ordner).ToList());
                 movedFolders = _fileMover.CreateCleanupFolderAndMove(path, selectedToCleanup.Where(i => i.Category == ItemCategory.Ordner).ToList());
-            }
+            });
 
             string dateStr = DateTime.Now.ToString("yyyy-MM-dd");
             ActionLog.Clear();
@@ -578,10 +729,12 @@ namespace DinoDeskCleaner.ViewModels
             ActionLog.Add($" - {movedFiles} Dateien verschoben (Ziel: Aufräumen\\{dateStr})");
             ActionLog.Add($" - {movedFolders} Ordner verschoben (Ziel: Aufräumen\\{dateStr}\\Ordner)");
 
-            StatusMessage = "Aufräumen abgeschlossen! Siehe Protokoll für Details.";
+            HasCleanedUp = true;
+            CleanupFinishedSummary = $"{movedFiles} Datei(en) und {movedFolders} Ordner erfolgreich nach 'Aufräumen\\{dateStr}' einsortiert.";
+            CleanupFinishedBannerText = $"🦖 Dino hat aufgeräumt! {movedFiles} Datei(en) und {movedFolders} Ordner wurden aufgeräumt. Gesperrte Elemente bleiben unberührt auf dem Desktop.";
+            StatusMessage = $"🦖 Dino hat aufgeräumt! ({movedFiles} Dateien, {movedFolders} Ordner verschoben)";
 
-            _ = ScanDesktopAsync();
-            SelectedTabIndex = 4;
+            await ScanDesktopInternalAsync(fromCleanup: true);
         }
 
         [RelayCommand]

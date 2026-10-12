@@ -9,6 +9,7 @@ DinoDesk Cleaner ist ein kleines Windows-Tool, das den Desktop aufräumt, Dateie
 ## Features
 
 - 🧹 **Desktop-Dateien und Ordner aufräumen**
+- 🔒 **Dateien & Ordner dauerhaft sperren**: Behalte wichtige Elemente auf dem Desktop – Dino merkt sich gesperrte Dateien dauerhaft und fasst sie nicht an
 - 📁 **Ablage unter Aufräumen\Datum\Kategorie**
 - 🔗 **Verknüpfungen separat prüfen**
 - 🔎 **Ausgewählte Programme direkt in Windows „Installierte Apps“ suchen**
@@ -17,7 +18,7 @@ DinoDesk Cleaner ist ein kleines Windows-Tool, das den Desktop aufräumt, Dateie
 - ↩ **Zuletzt gelöschtes Element aus dem Papierkorb wiederherstellen**
 - ↶ **Letzte Aufräumaktion rückgängig machen**
 - 🦕 **Eigener DinoDesk-Aufräumordner mit Dino-Symbol**
-- ✅ **Hinweis, wenn der Desktop bereits sauber ist**
+- 🦖 **Dino-Status**: Dino begrüßt dich startbereit und meldet sich freudig, wenn er fertig aufgeräumt hat
 - 🔒 **Keine ungefragte Deinstallation oder Löschung**
 
 ## Voraussetzungen
